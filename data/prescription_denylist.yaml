@@ -1,0 +1,206 @@
+# Drugs and drug classes MedLink must NEVER name to a caller.
+#
+# The medicine pipeline already builds its spoken text only from the curated
+# formulary, so this is a backstop for the one failure mode it cannot prevent:
+# the LLM volunteering a drug from its own training data ("just take
+# azithromycin"). Scanned over generated speech before it reaches TTS by
+# src/safety/guardrails.py.
+#
+# Everything here is prescription-only in India (Schedule H/H1/X), withdrawn,
+# or a class that must never be self-prescribed. Add freely - a false positive
+# only costs one re-worded sentence.
+
+classes:
+  - antibiotic
+  - antibiotics
+  - antibiotic tablet
+  - steroid
+  - steroids
+  - corticosteroid
+  - injection
+  - injectable
+  - iv drip
+  - saline drip
+  - painkiller injection
+  - sleeping pill
+  - sleeping pills
+  - sedative
+  - antidepressant
+  - blood thinner
+
+drugs:
+  # Antibiotics (Schedule H1 - the biggest AMR risk in self-medication)
+  - amoxicillin
+  - amoxyclav
+  - augmentin
+  - azithromycin
+  - azithral
+  - ciprofloxacin
+  - cifran
+  - levofloxacin
+  - ofloxacin
+  - norfloxacin
+  - doxycycline
+  - cefixime
+  - taxim
+  - ceftriaxone
+  - metronidazole
+  - flagyl
+  - tinidazole
+  - clarithromycin
+  - erythromycin
+  - rifampicin
+  - isoniazid
+  - linezolid
+  - vancomycin
+  - gentamicin
+  - amikacin
+  - nitrofurantoin
+  - cotrimoxazole
+  - septran
+
+  # Steroids and immunosuppressants
+  - dexamethasone
+  - prednisolone
+  - wysolone
+  - methylprednisolone
+  - hydrocortisone
+  - betamethasone
+  - deflazacort
+
+  # Opioids and controlled analgesics (Schedule H1/X)
+  - tramadol
+  - codeine
+  - morphine
+  - fentanyl
+  - pentazocine
+  - buprenorphine
+  - alprazolam
+  - diazepam
+  - lorazepam
+  - clonazepam
+  - zolpidem
+  - nitrazepam
+
+  # Withdrawn or restricted in India
+  - ranitidine
+  - zantac
+  - nimesulide
+  - phenylbutazone
+  - analgin
+  - metamizole
+
+  # Prescription-only despite being widely misused as OTC
+  - metoclopramide
+  - domperidone
+  - ondansetron
+  - dicyclomine
+  - drotaverine
+  - meftal
+  - mefenamic acid
+  - ketorolac
+  - diclofenac sodium tablet
+  - aceclofenac
+  - piroxicam
+  - omeprazole
+  - pantoprazole
+  - rabeprazole
+  - esomeprazole
+  - salbutamol tablet
+  - montelukast
+  - theophylline
+  - warfarin
+  - clopidogrel
+  - atorvastatin
+  - metformin
+  - glimepiride
+  - insulin
+  - amlodipine
+  - telmisartan
+  - atenolol
+  - losartan
+  - furosemide
+  - lasix
+  - hydroxychloroquine
+  - ivermectin
+  - albendazole syrup for infants
+  - chloroquine
+  - artemether
+  - primaquine
+  - fluconazole tablet
+  - ketoconazole tablet
+  - griseofulvin
+  - terbinafine tablet
+  - acyclovir
+  - oseltamivir
+  - tamiflu
+
+# Medicines a caller can genuinely buy over the counter in India, but which
+# MedLink has NOT safety-checked. The formulary is the only list the agent is
+# allowed to advise from; anything here is a real product the model might
+# volunteer from its training data instead ("just take a Combiflam").
+#
+# Blocked for a different reason than the drugs above - these do not need a
+# prescription, they simply are not ours to advise on - so the guard says so
+# differently.
+#
+# Names in the formulary are filtered out of this list at load time by
+# Formulary.known_names(), so adding one here by mistake cannot silence a
+# medicine we do stock. That allow-list gate is why Combiflam, Digene, Brufen
+# and Crocin stay speakable.
+#
+# Weighted toward the ones that actually cause harm when self-prescribed:
+# nimesulide (liver injury, banned under 12 in India), aspirin in children
+# (Reye's syndrome), ranitidine (withdrawn over NDMA), and codeine syrups.
+unvetted_otc:
+  - disprin
+  - aspirin
+  - saridon
+  - anacin
+  - metacin
+  - nimesulide
+  - nimulid
+  - nise
+  - sumo tablet
+  - meftal
+  - meftal spas
+  - mefenamic acid
+  - ranitidine
+  - zintac
+  - rantac
+  - aciloc
+  - omez
+  - omeprazole
+  - pantoprazole
+  - pan 40
+  - cyclopam
+  - drotaverine
+  - vicks action 500
+  - d cold
+  - d cold total
+  - sinarest
+  - cheston cold
+  - coldarin
+  - corex
+  - phensedyl
+  - honitus
+  - ascoril
+  - avil
+  - pheniramine
+  - dulcolax
+  - bisacodyl
+  - cremaffin
+  - softovac
+  - isabgol
+  - liv 52
+  - becosules
+  - unienzyme
+  - hajmola
+  - pudin hara
+  - eno
+  - iodex
+  - moov
+  - volini
+  - zandu balm
+  - amrutanjan
+  - dart tablet

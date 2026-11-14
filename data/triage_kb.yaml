@@ -1,0 +1,955 @@
+# MedLink triage knowledge base.
+#
+# Clinical DECISION SUPPORT, not transcripts. Each entry says: what callers call
+# this problem (in 6 languages), which follow-up questions actually change the
+# decision, what makes it more serious, and which OTC categories - if any - are
+# ever appropriate. Retrieval is lexical over `aliases`, so add the words real
+# callers use rather than textbook terms.
+#
+# Fields:
+#   id                      stable slug
+#   presentation            clinician-facing label
+#   aliases                 per-language lay terms; THIS is what retrieval matches
+#   candidate_questions     3-6 questions offered to the LLM as guidance, not a script
+#   severity_modifiers      added to the deterministic severity score when matched
+#   otc_categories_allowed  therapeutic_class values from data/formulary.json.
+#                           [] means NO over-the-counter medicine is ever appropriate.
+#   self_care               plain-language advice safe for a rural home
+#   refer_when              explicit criteria for sending them to a clinician
+#
+# The hard emergency guard lives in data/redflags.yaml and runs before the LLM;
+# `red_flags` here is advisory context for the model.
+#
+# Sources: WHO IMCI, WHO/ICMR Standard Treatment Guidelines, NICE CKS.
+# Must be reviewed by a clinician before production use.
+
+version: 1
+last_reviewed: "2026-09-09"
+
+entries:
+  - id: hair_loss
+    presentation: "Hair loss or thinning"
+    # The word "hair" alone also occurs in unrelated concerns such as greying.
+    require_alias: true
+    aliases:
+      en: [hair loss, hair fall, hairfall, hair falling, losing hair, thinning hair, hair thinning, hair thinned, thinned hair, hair getting thinner, shedding hair, hair shedding, bald patches, receding hairline, alopecia]
+      hi: [baal jhadna, baal jhad rahe, bal jhad, बाल झड़, बाल गिर, बाल कम]
+      ta: [mudi uthir, முடி உதிர், முடி கொட்டு, தலைமுடி உதிர்]
+      te: [juttu ralu, జుట్టు రాలు, జుట్టు రాలి, జుట్టు ఊడు]
+      kn: [koodalu uduru, koodalu uduruttide, ಕೂದಲು ಉದುರು, ಕೂದಲು ಉದುರಿ]
+      ml: [mudi kozhichil, മുടി കൊഴി, മുടികൊഴിച്ചിൽ]
+    candidate_questions:
+      - "How long have you been noticing the hair loss?"
+      - "Where is the thinning: all over, in separate patches, or along the hairline?"
+      - "Have you noticed changes to the scalp, such as itching or flaking?"
+      - "Does anyone in your family have a similar pattern of hair thinning?"
+      - "Was there an illness or major change in your health before the shedding began?"
+      - "How do you usually style or treat your hair?"
+    followup_questions:
+      - topic: duration
+        text:
+          en-IN: "How long have you been noticing the hair loss?"
+          hi-IN: "बाल कितने समय से झड़ रहे हैं?"
+          ta-IN: "எவ்வளவு காலமாக முடி உதிர்கிறது?"
+          te-IN: "ఎంతకాలంగా జుట్టు రాలుతోంది?"
+          kn-IN: "ಎಷ್ಟು ಸಮಯದಿಂದ ಕೂದಲು ಉದುರುತ್ತಿದೆ?"
+          ml-IN: "എത്ര കാലമായി മുടി കൊഴിയുന്നു?"
+      - topic: hair_pattern
+        text:
+          en-IN: "Where is the thinning: all over, in separate patches, or mainly along the hairline?"
+          hi-IN: "बाल पूरे सिर से कम हो रहे हैं, अलग-अलग जगहों से, या मुख्य रूप से आगे की तरफ से?"
+          ta-IN: "முடி தலை முழுவதுமா, திட்டுத் திட்டாகவா, அல்லது முன்பகுதியிலா குறைகிறது?"
+          te-IN: "జుట్టు తల అంతటా, అక్కడక్కడా మచ్చల్లా, లేదా ముఖ్యంగా ముందుభాగంలో తగ్గుతోందా?"
+          kn-IN: "ಕೂದಲು ತಲೆ ತುಂಬಾ, ಅಲ್ಲಲ್ಲಿ ತೇಪೆಯಂತೆ, ಅಥವಾ ಮುಖ್ಯವಾಗಿ ಮುಂಭಾಗದಲ್ಲಿ ಕಡಿಮೆಯಾಗುತ್ತಿದೆಯೇ?"
+          ml-IN: "മുടി തല മുഴുവനായോ, ചില ഭാഗങ്ങളിൽ മാത്രമായോ, പ്രധാനമായും മുൻവശത്തോ കുറയുന്നുണ്ടോ?"
+      - topic: scalp_changes
+        text:
+          en-IN: "Have you noticed any changes to your scalp, such as itching or flaking?"
+          hi-IN: "सिर की त्वचा में खुजली या पपड़ी जैसे कोई बदलाव हैं?"
+          ta-IN: "தலைத்தோலில் அரிப்பு அல்லது செதில்கள் போன்ற மாற்றங்கள் உள்ளனவா?"
+          te-IN: "తల చర్మంలో దురద లేదా పొట్టు వంటి మార్పులు గమనించారా?"
+          kn-IN: "ತಲೆಯ ಚರ್ಮದಲ್ಲಿ ತುರಿಕೆ ಅಥವಾ ಹೊಟ್ಟು ಉದುರುವಂತಹ ಬದಲಾವಣೆಗಳಿವೆಯೇ?"
+          ml-IN: "തലയോട്ടിയിൽ ചൊറിച്ചിലോ തൊലി പൊഴിയുന്നതോ പോലുള്ള മാറ്റങ്ങളുണ്ടോ?"
+      - topic: family_history
+        text:
+          en-IN: "Does anyone in your family have a similar pattern of hair thinning?"
+          hi-IN: "क्या परिवार में किसी और के बाल भी इसी तरह कम हुए हैं?"
+          ta-IN: "குடும்பத்தில் வேறு யாருக்காவது இதேபோல் முடி குறைந்துள்ளதா?"
+          te-IN: "మీ కుటుంబంలో మరెవరికైనా ఇలాగే జుట్టు తగ్గిందా?"
+          kn-IN: "ನಿಮ್ಮ ಕುಟುಂಬದಲ್ಲಿ ಬೇರೆಯವರಿಗೆ ಇದೇ ರೀತಿಯಲ್ಲಿ ಕೂದಲು ಕಡಿಮೆಯಾಗಿದೆಯೇ?"
+          ml-IN: "കുടുംബത്തിൽ മറ്റാർക്കെങ്കിലും ഇതുപോലെ മുടി കുറഞ്ഞിട്ടുണ്ടോ?"
+      - topic: recent_changes
+        text:
+          en-IN: "Was there an illness or major change in your health before the shedding began?"
+          hi-IN: "बाल झड़ना शुरू होने से पहले कोई बीमारी या सेहत में बड़ा बदलाव हुआ था?"
+          ta-IN: "முடி உதிரத் தொடங்குமுன் நோய் அல்லது உடல்நலத்தில் பெரிய மாற்றம் ஏற்பட்டதா?"
+          te-IN: "జుట్టు రాలడం మొదలయ్యే ముందు అనారోగ్యం లేదా ఆరోగ్యంలో పెద్ద మార్పు వచ్చిందా?"
+          kn-IN: "ಕೂದಲು ಉದುರುವ ಮೊದಲು ಅನಾರೋಗ್ಯ ಅಥವಾ ಆರೋಗ್ಯದಲ್ಲಿ ದೊಡ್ಡ ಬದಲಾವಣೆಯಾಗಿತ್ತೇ?"
+          ml-IN: "മുടി കൊഴിയാൻ തുടങ്ങുന്നതിന് മുമ്പ് അസുഖമോ ആരോഗ്യത്തിൽ വലിയ മാറ്റമോ ഉണ്ടായിരുന്നോ?"
+      - topic: hair_care
+        text:
+          en-IN: "How do you usually style or treat your hair?"
+          hi-IN: "आप आम तौर पर बालों को कैसे बाँधते या संवारते हैं?"
+          ta-IN: "வழக்கமாக முடியை எப்படிக் கட்டுகிறீர்கள் அல்லது பராமரிக்கிறீர்கள்?"
+          te-IN: "మీ జుట్టును సాధారణంగా ఎలా కట్టుకుంటారు లేదా సంరక్షిస్తారు?"
+          kn-IN: "ನೀವು ಸಾಮಾನ್ಯವಾಗಿ ಕೂದಲನ್ನು ಹೇಗೆ ಕಟ್ಟುತ್ತೀರಿ ಅಥವಾ ಆರೈಕೆ ಮಾಡುತ್ತೀರಿ?"
+          ml-IN: "സാധാരണയായി മുടി എങ്ങനെയാണ് കെട്ടുകയോ പരിചരിക്കുകയോ ചെയ്യുന്നത്?"
+      - topic: age
+        text:
+          en-IN: "How old are you?"
+          hi-IN: "आपकी उम्र कितनी है?"
+          ta-IN: "உங்கள் வயது என்ன?"
+          te-IN: "మీ వయసు ఎంత?"
+          kn-IN: "ನಿಮ್ಮ ವಯಸ್ಸು ಎಷ್ಟು?"
+          ml-IN: "നിങ്ങളുടെ പ്രായം എത്രയാണ്?"
+      - topic: progression
+        text:
+          en-IN: "Has the thinning been gradual, or has it changed suddenly?"
+          hi-IN: "बाल धीरे-धीरे कम हो रहे हैं या अचानक बदलाव आया है?"
+          ta-IN: "முடி மெதுவாகக் குறைகிறதா அல்லது திடீரென மாற்றம் ஏற்பட்டதா?"
+          te-IN: "జుట్టు నెమ్మదిగా తగ్గుతోందా లేదా అకస్మాత్తుగా మార్పు వచ్చిందా?"
+          kn-IN: "ಕೂದಲು ನಿಧಾನವಾಗಿ ಕಡಿಮೆಯಾಗುತ್ತಿದೆಯೇ ಅಥವಾ ಇದ್ದಕ್ಕಿದ್ದಂತೆ ಬದಲಾಗಿದೆಯೇ?"
+          ml-IN: "മുടി ക്രമേണയാണോ കുറയുന്നത്, അതോ പെട്ടെന്ന് മാറ്റം വന്നതാണോ?"
+      - topic: impact
+        text:
+          en-IN: "How is the hair loss affecting your daily life?"
+          hi-IN: "बाल झड़ने का आपकी रोज़मर्रा की ज़िंदगी पर क्या असर पड़ रहा है?"
+          ta-IN: "முடி உதிர்வது உங்கள் அன்றாட வாழ்க்கையை எப்படிப் பாதிக்கிறது?"
+          te-IN: "జుట్టు రాలడం మీ రోజువారీ జీవితాన్ని ఎలా ప్రభావితం చేస్తోంది?"
+          kn-IN: "ಕೂದಲು ಉದುರುವುದು ನಿಮ್ಮ ದಿನನಿತ್ಯದ ಜೀವನದ ಮೇಲೆ ಹೇಗೆ ಪರಿಣಾಮ ಬೀರುತ್ತಿದೆ?"
+          ml-IN: "മുടി കൊഴിച്ചിൽ നിങ്ങളുടെ ദൈനംദിന ജീവിതത്തെ എങ്ങനെ ബാധിക്കുന്നു?"
+    explanation: >-
+      Hair loss is a symptom, not a confirmed diagnosis. Gradual hairline or crown
+      thinning with a similar family pattern can suggest hereditary pattern hair
+      loss. Diffuse shedding after illness or a major health change can have a
+      different cause. Separate patches or scalp symptoms need examination;
+      do not assume they are hereditary. Duration alone does not identify the
+      cause. Do not infer stress, nutritional deficiency or hormone problems
+      unless supported, and never claim a confirmed diagnosis on this call.
+    self_care: >-
+      Handle hair gently, wash with a gentle shampoo, and use conditioner to
+      reduce breakage. Let hair dry naturally when practical. These steps reduce
+      damage; they do not guarantee regrowth or treat every cause of hair loss.
+    avoid: >-
+      Avoid tight hairstyles, high-heat styling, harsh chemical treatments and
+      unverified hair-growth remedies. Do not recommend medicines or supplements.
+    refer_when: >-
+      Arrange a clinician or dermatologist examination for persistent or
+      progressive loss. Seek earlier review for sudden patches, a painful or
+      inflamed scalp, or rapid worsening. Chronic hair loss alone is not an emergency.
+    otc_categories_allowed: []
+    source: "https://www.aad.org/public/diseases/hair-loss/treatment/diagnosis-treat ; https://www.aad.org/public/diseases/hair-loss/treatment/tips (accessed 2026-11-13; clinician review pending)"
+    recovery_assessments:
+      en-IN:
+        likely: "Hair loss can have several causes; I cannot confirm which one applies on this call."
+        why: "Hair loss can have different causes, and I cannot tell which applies without an examination."
+        do: "Use a gentle shampoo and conditioner, and let your hair dry naturally."
+        avoid: "Avoid tight hairstyles, high heat, harsh chemical treatments and unverified hair-growth remedies."
+        seek_care: "Book a visit for ongoing loss; get checked sooner for sudden patches or a painful, inflamed scalp."
+      hi-IN:
+        likely: "बाल झड़ने की कई वजहें हो सकती हैं; फोन पर पक्की वजह नहीं बता सकती।"
+        why: "बाल झड़ने की अलग-अलग वजहें हो सकती हैं; जाँच के बिना आपकी वजह पक्की नहीं बता सकती।"
+        do: "हल्के शैम्पू और कंडीशनर से बालों को धीरे धोएँ और हवा में सूखने दें।"
+        avoid: "बाल कसकर बाँधने, तेज गर्मी, कठोर केमिकल और बिना प्रमाण वाले बाल उगाने के नुस्खों से बचें।"
+        seek_care: "बाल लगातार झड़ें तो डॉक्टर से मिलें; अचानक चकत्ते, दर्द या सूजन हो तो जल्दी दिखाएँ।"
+      ta-IN:
+        likely: "முடி உதிர்வதற்குப் பல காரணங்கள் இருக்கலாம்; தொலைபேசியில் காரணத்தை உறுதி செய்ய முடியாது."
+        why: "முடி உதிர்வதற்குப் பல காரணங்கள் இருக்கலாம்; பரிசோதனை இல்லாமல் உங்கள் காரணத்தை உறுதியாகச் சொல்ல முடியாது."
+        do: "மென்மையான ஷாம்பூவும் கண்டிஷனரும் பயன்படுத்தி முடியை இயற்கையாக உலரவிடுங்கள்."
+        avoid: "முடியை இறுக்கமாகக் கட்டுதல், அதிக வெப்பம், கடுமையான ரசாயனங்கள் மற்றும் நிரூபிக்கப்படாத முடி வளர்க்கும் முறைகளைத் தவிர்க்கவும்."
+        seek_care: "தொடர்ந்து முடி உதிர்ந்தால் மருத்துவரைப் பாருங்கள்; திடீர் வழுக்கைத் திட்டுகள், தலைத்தோலில் வலி அல்லது வீக்கம் இருந்தால் விரைவில் காட்டுங்கள்."
+      te-IN:
+        likely: "జుట్టు రాలడానికి అనేక కారణాలు ఉండవచ్చు; ఫోనులో ఖచ్చితమైన కారణాన్ని నిర్ధారించలేను."
+        why: "జుట్టు రాలడానికి వేర్వేరు కారణాలు ఉండవచ్చు; పరీక్ష లేకుండా మీ కారణాన్ని ఖచ్చితంగా చెప్పలేను."
+        do: "మృదువైన షాంపూ, కండిషనర్ వాడి జుట్టును సహజంగా ఆరనివ్వండి."
+        avoid: "జుట్టును బిగించి కట్టడం, అధిక వేడి, కఠినమైన రసాయనాలు, నిరూపించని జుట్టు పెంచే చిట్కాలను నివారించండి."
+        seek_care: "జుట్టు రాలడం కొనసాగితే వైద్యుని కలవండి; అకస్మాత్తుగా బట్టతల మచ్చలు, తల చర్మంలో నొప్పి లేదా వాపు వస్తే త్వరగా చూపించండి."
+      kn-IN:
+        likely: "ಕೂದಲು ಉದುರುವುದಕ್ಕೆ ಹಲವಾರು ಕಾರಣಗಳಿರಬಹುದು; ಫೋನಿನಲ್ಲಿ ಖಚಿತ ಕಾರಣವನ್ನು ಹೇಳಲು ಸಾಧ್ಯವಿಲ್ಲ."
+        why: "ಕೂದಲು ಉದುರುವುದಕ್ಕೆ ಬೇರೆಬೇರೆ ಕಾರಣಗಳಿರಬಹುದು; ಪರೀಕ್ಷೆ ಇಲ್ಲದೆ ನಿಮ್ಮ ಕಾರಣವನ್ನು ಖಚಿತವಾಗಿ ಹೇಳಲಾಗದು."
+        do: "ಸೌಮ್ಯವಾದ ಶಾಂಪೂ ಮತ್ತು ಕಂಡಿಷನರ್ ಬಳಸಿ ಕೂದಲನ್ನು ಸಹಜವಾಗಿ ಒಣಗಲು ಬಿಡಿ."
+        avoid: "ಕೂದಲನ್ನು ಬಿಗಿಯಾಗಿ ಕಟ್ಟುವುದು, ಹೆಚ್ಚು ಶಾಖ, ಕಠಿಣ ರಾಸಾಯನಿಕಗಳು ಮತ್ತು ಸಾಬೀತಾಗದ ಕೂದಲು ಬೆಳೆಯುವ ಮನೆಮದ್ದುಗಳನ್ನು ತಪ್ಪಿಸಿ."
+        seek_care: "ಕೂದಲು ಉದುರುವುದು ಮುಂದುವರಿದರೆ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ; ಇದ್ದಕ್ಕಿದ್ದಂತೆ ಬೋಳು ತೇಪೆಗಳು, ತಲೆಯ ಚರ್ಮದಲ್ಲಿ ನೋವು ಅಥವಾ ಉರಿಯೂತ ಇದ್ದರೆ ಬೇಗ ತೋರಿಸಿ."
+      ml-IN:
+        likely: "മുടി കൊഴിച്ചിലിന് പല കാരണങ്ങളുണ്ടാകാം; ഫോണിലൂടെ കൃത്യമായ കാരണം ഉറപ്പിക്കാനാവില്ല."
+        why: "മുടി കൊഴിച്ചിലിന് പല കാരണങ്ങളുണ്ടാകാം; പരിശോധനയില്ലാതെ നിങ്ങളുടെ കാരണം ഉറപ്പിക്കാനാവില്ല."
+        do: "മൃദുവായ ഷാംപൂവും കണ്ടീഷണറും ഉപയോഗിച്ച് മുടി സ്വാഭാവികമായി ഉണങ്ങാൻ അനുവദിക്കുക."
+        avoid: "മുടി മുറുക്കിക്കെട്ടൽ, അമിത ചൂട്, കടുത്ത രാസവസ്തുക്കൾ, തെളിവില്ലാത്ത മുടി വളർത്തൽ വിദ്യകൾ എന്നിവ ഒഴിവാക്കുക."
+        seek_care: "മുടി കൊഴിച്ചിൽ തുടരുകയാണെങ്കിൽ ഡോക്ടറെ കാണുക; പെട്ടെന്നുള്ള കഷണ്ടിപ്പാടുകൾ, തലയോട്ടിയിൽ വേദനയോ വീക്കമോ ഉണ്ടെങ്കിൽ നേരത്തേ കാണിക്കുക."
+
+  - id: fever
+    presentation: "Fever"
+    aliases:
+      en: [fever, temperature, high temperature, hot body, chills, shivering, feverish]
+      hi: [bukhar, taap, thand lag rahi, jvar, बुखार, ज्वर, ताप, तेज बुखार]
+      ta: [kaaichal, juram, kaichal, காய்ச்சல், ஜுரம், சுரம்]
+      te: [jwaram, jwara, vedi, జ్వరం, జొరం, వేడి]
+      kn: [jwara, sekhe, ಜ್ವರ, ಜ್ವರ ಬಂದಿದೆ]
+      ml: [pani, jvaram, പനി, ജ്വരം]
+    red_flags:
+      - fever with stiff neck or rash that does not fade
+      - fever over 5 days
+      - fever in a baby under 3 months
+      - fever with confusion or fits
+    candidate_questions:
+      - "How many days have you had the fever?"
+      - "Have you measured the temperature, or does the body feel very hot?"
+      - "Along with the fever, is there cough, loose motions, burning urine, or a rash?"
+      - "Is there any neck stiffness, confusion, or a fit?"
+      - "Has anyone else at home had fever recently?"
+    severity_modifiers:
+      duration_over_5_days: 3
+      age_under_5: 2
+      with_rash: 3
+      with_confusion: 5
+    otc_categories_allowed: [analgesic_antipyretic, oral_rehydration]
+    self_care: >-
+      Drink plenty of water or ORS. Rest. Sponge the body with normal-temperature
+      water if very hot. Eat light food. Do not cover with heavy blankets.
+    refer_when: >-
+      Fever lasting more than 3 days, fever in a child under 5, fever with a
+      rash, neck stiffness, breathing difficulty, confusion, or very little urine.
+    source: "WHO IMCI; ICMR STG fever"
+
+  - id: cough_cold
+    presentation: "Cough and common cold"
+    aliases:
+      en: [cough, cold, running nose, runny nose, blocked nose, sneezing, phlegm, chest congestion, khansi]
+      hi: [khansi, sardi, zukam, naak behna, balgam, kaf, खांसी, सर्दी, जुकाम, नाक बह रही]
+      ta: [irumal, jaladhosham, sali, இருமல், சளி, ஜலதோஷம்]
+      te: [dagg, jalubu, daggu, దగ్గు, జలుబు, ముక్కు కారడం]
+      kn: [kemmu, negadi, shita, ಕೆಮ್ಮು, ಶೀತ, ನೆಗಡಿ]
+      ml: [chuma, jaladosham, ചുമ, ജലദോഷം, മൂക്കൊലിപ്പ്]
+    red_flags:
+      - coughing blood
+      - breathlessness at rest
+      - cough for more than 3 weeks
+      - chest pain with the cough
+    candidate_questions:
+      - "How many days has the cough been there?"
+      - "Is it a dry cough, or is phlegm coming out?"
+      - "Is there any difficulty in breathing or wheezing sound?"
+      - "Is there fever along with it?"
+      - "Have you been coughing for more than three weeks, or coughing any blood?"
+    severity_modifiers:
+      duration_over_21_days: 5
+      with_breathlessness: 5
+      with_blood: 6
+      age_under_5: 2
+    otc_categories_allowed: [cough_expectorant, throat_lozenge, nasal_saline, decongestant_topical, analgesic_antipyretic]
+    self_care: >-
+      Drink warm water often. Steam inhalation twice a day. Warm salt-water
+      gargles for throat irritation. Honey in warm water helps a dry cough in
+      anyone over one year. Avoid smoke and dust.
+    refer_when: >-
+      Cough lasting more than 3 weeks (this must be checked for TB), coughing
+      blood, breathlessness, chest pain, or high fever that will not settle.
+    source: "NICE CKS cough; RNTCP/NTEP TB screening guidance"
+
+  - id: sore_throat
+    presentation: "Sore throat"
+    aliases:
+      en: [sore throat, throat pain, throat infection, painful swallowing, gala kharab]
+      hi: [gale mein dard, gala kharab, nigalne mein dard, गले में दर्द, गला खराब, गले में खराश]
+      ta: [thondai vali, thondai kaduppu, தொண்டை வலி, தொண்டை கரகரப்பு]
+      te: [gontu noppi, గొంతు నొప్పి, గొంతు మంట]
+      kn: [gantalu novu, ಗಂಟಲು ನೋವು, ಗಂಟಲು ಕೆರೆತ]
+      ml: [thonda vedana, തൊണ്ടവേദന, തൊണ്ട വേദന]
+    red_flags:
+      - unable to swallow saliva or drooling
+      - difficulty breathing
+      - swelling of the neck
+    candidate_questions:
+      - "How many days has your throat been paining?"
+      - "Is it difficult to swallow food or even water?"
+      - "Is there fever along with it?"
+      - "Can you see white patches at the back of the throat?"
+    severity_modifiers:
+      cannot_swallow_fluids: 6
+      with_high_fever: 2
+      duration_over_7_days: 2
+    otc_categories_allowed: [throat_lozenge, analgesic_antipyretic]
+    self_care: >-
+      Warm salt-water gargles three times a day. Warm fluids. Rest the voice.
+      Avoid very spicy or very cold food.
+    refer_when: >-
+      Cannot swallow liquids, drooling, breathing difficulty, neck swelling,
+      high fever with white patches, or pain lasting over a week.
+    source: "NICE CKS sore throat; WHO IMCI"
+
+  - id: diarrhoea
+    presentation: "Diarrhoea / loose motions"
+    aliases:
+      en: [diarrhoea, diarrhea, loose motions, loose motion, watery stool, motions, stomach running, frequent stools]
+      hi: [dast, patla paikhana, loose motion, atisar, दस्त, पतले दस्त, पेट खराब, लूज मोशन]
+      ta: [vayitru pokku, bedhi, வயிற்றுப்போக்கு, பேதி]
+      te: [virechanalu, diarrhoea, bhedi, విరేచనాలు, డయేరియా]
+      kn: [bhedi, atisara, ಭೇದಿ, ಅತಿಸಾರ]
+      ml: [vayaru ilakkam, vayattilakkam, വയറിളക്കം, അതിസാരം]
+    red_flags:
+      - blood or mucus in the stool
+      - sunken eyes, no urine, extreme weakness
+      - unable to keep any fluid down
+      - diarrhoea in a baby under 6 months
+    candidate_questions:
+      - "How many times have you passed motion since yesterday?"
+      - "Is there any blood or slime in the motion?"
+      - "Are you able to drink and keep water down?"
+      - "Are you passing urine as usual?"
+      - "Is there fever or stomach pain along with it?"
+    severity_modifiers:
+      blood_in_stool: 6
+      no_urine: 6
+      cannot_keep_fluids: 6
+      age_under_5: 3
+      age_over_65: 2
+    otc_categories_allowed: [oral_rehydration, diarrhoea_adjunct, antidiarrheal]
+    self_care: >-
+      ORS is the main treatment - one sachet in one full litre of clean water,
+      sipped after every loose motion. Keep eating; keep breastfeeding a baby.
+      Children need zinc for 14 days along with ORS. Wash hands with soap.
+      Do not stop food or fluids to rest the stomach, and do not stop
+      breastfeeding - that makes dehydration worse. Do not give a child any
+      medicine to stop the motions. Plain sugar water is not a substitute for
+      ORS.
+    refer_when: >-
+      Blood in the stool, no urine passed, sunken eyes, extreme weakness,
+      vomiting everything, a baby under 6 months, or no improvement in 2 days.
+    source: "WHO/UNICEF ORS and zinc guidance; IAP"
+
+  - id: vomiting
+    presentation: "Vomiting"
+    aliases:
+      en: [vomiting, throwing up, nausea, feeling sick, cannot keep food down]
+      hi: [ulti, jee michlana, matli, उल्टी, वमन, जी मिचलाना, मतली]
+      ta: [vaandhi, kuma, வாந்தி, குமட்டல்]
+      te: [vanthulu, vaanthi, వాంతులు, వికారం]
+      kn: [vaanti, valake, ವಾಂತಿ, ವಾಕರಿಕೆ]
+      ml: [chardi, omikkuka, ഛർദി, ഓക്കാനം]
+    red_flags:
+      - vomiting blood
+      - severe abdominal pain with vomiting
+      - vomiting with a severe headache or stiff neck
+      - green or dark vomit
+    candidate_questions:
+      - "How many times have you vomited?"
+      - "Is there any blood in the vomit?"
+      - "Are you able to keep down even small sips of water?"
+      - "Is there stomach pain or loose motions along with it?"
+    severity_modifiers:
+      vomiting_blood: 8
+      cannot_keep_fluids: 6
+      with_severe_abdominal_pain: 5
+      age_under_5: 3
+    otc_categories_allowed: [oral_rehydration]
+    self_care: >-
+      Take small sips of ORS or clean water every few minutes rather than a
+      large amount at once. Rest. Avoid oily and spicy food. Plain rice, curd
+      or banana once vomiting settles.
+    refer_when: >-
+      Blood in the vomit, unable to keep any fluid down for more than a few
+      hours, severe stomach pain, or a child who is drowsy or not passing urine.
+    source: "NICE CKS nausea and vomiting; WHO IMCI"
+
+  - id: abdominal_pain
+    presentation: "Abdominal / stomach pain"
+    aliases:
+      en: [stomach pain, stomach ache, abdominal pain, tummy pain, belly pain, cramps, pet dard]
+      hi: [pet dard, pet mein dard, marod, पेट दर्द, पेट में दर्द, पेट में मरोड़]
+      ta: [vayiru vali, vayitru vali, வயிற்று வலி, வயிறு வலி]
+      te: [kadupu noppi, కడుపు నొప్పి, పొట్ట నొప్పి]
+      kn: [hotte novu, ಹೊಟ್ಟೆ ನೋವು]
+      ml: [vayaru vedana, വയറുവേദന, വയറു വേദന]
+    red_flags:
+      - severe or sudden very bad pain
+      - hard rigid abdomen
+      - pain with vomiting blood or black stools
+      - pain in pregnancy
+    candidate_questions:
+      - "Where exactly in the stomach is the pain?"
+      - "How bad is the pain - can you walk and move normally?"
+      - "Is there vomiting, loose motions, or fever with it?"
+      - "Is the pain constant, or does it come and go?"
+      - "For women: is there any chance you could be pregnant?"
+    severity_modifiers:
+      severe_pain: 5
+      rigid_abdomen: 8
+      pregnant: 5
+      with_black_stools: 7
+      age_over_65: 2
+    otc_categories_allowed: [antacid]
+    self_care: >-
+      Light food, small meals, plenty of water. Avoid spicy, oily and very sour
+      food. A warm cloth over the stomach may ease mild cramps.
+    refer_when: >-
+      Severe pain, a hard tight stomach, pain that keeps worsening, pain with
+      fever or vomiting blood, black stools, or any stomach pain in pregnancy.
+    source: "NICE CKS abdominal pain; ICMR STG"
+
+  - id: acidity
+    presentation: "Acidity / heartburn / indigestion"
+    aliases:
+      en: [acidity, heartburn, gas, indigestion, burning in chest after food, sour belching, bloating, gastric, burning in my chest, chest burning, burning after eating, burning after meals, burning after food, burns after eating, burns after i eat, acid reflux, reflux, sour burps]
+      hi: [gas, acidity, jalan, khatti dakar, badhazmi, एसिडिटी, सीने में जलन, गैस, खट्टी डकार]
+      ta: [aamilam, neruppu erichal, vaayu, நெஞ்செரிச்சல், வாயு தொல்லை]
+      te: [amlatvam, gastric, gyas, గుండెల్లో మంట, ఎసిడిటీ, గ్యాస్]
+      kn: [hulita, gyas, hotte uri, ಎದೆಯುರಿ, ಆಮ್ಲೀಯತೆ, ಗ್ಯಾಸ್]
+      ml: [nenjerichil, gyas, നെഞ്ചെരിച്ചിൽ, അസിഡിറ്റി, ഗ്യാസ്]
+    red_flags:
+      - burning that spreads to the arm or jaw, or comes on with exertion
+      - black stools or vomiting blood
+      - difficulty swallowing
+      - unexplained weight loss
+    candidate_questions:
+      - "Does the burning come after eating, or does it come when you walk or work?"
+      - "How long has this been happening?"
+      - "Is there any difficulty swallowing food?"
+      - "Have you noticed black-coloured motions?"
+    severity_modifiers:
+      exertional: 8
+      black_stools: 7
+      difficulty_swallowing: 5
+      duration_over_14_days: 2
+    otc_categories_allowed: [antacid]
+    self_care: >-
+      Eat smaller meals and do not lie down for two hours after eating. Cut down
+      on very spicy, oily and sour food, tea on an empty stomach, and tobacco.
+      Raise the head end of the bed slightly.
+    refer_when: >-
+      Burning brought on by walking or exertion (this can be the heart, not the
+      stomach), black stools, vomiting blood, difficulty swallowing, weight loss,
+      or symptoms lasting more than two weeks.
+    source: "NICE CKS dyspepsia"
+
+  - id: headache
+    presentation: "Headache"
+    aliases:
+      en: [headache, head pain, migraine, head is paining, sir dard]
+      hi: [sir dard, sar dard, adha sir dard, सिर दर्द, सिरदर्द, सर में दर्द, सिर में दर्द, सिर में बहुत दर्द, सर दर्द, sir mein dard]
+      ta: [thalai vali, ore thalai vali, தலைவலி, தலை வலி]
+      te: [thalanoppi, tala noppi, తలనొప్పి, తల నొప్పి]
+      kn: [tale novu, ತಲೆನೋವು, ತಲೆ ನೋವು]
+      ml: [thalavedana, തലവേദന, തല വേദന]
+    red_flags:
+      - sudden worst-ever headache
+      - headache with fever and neck stiffness
+      - headache with weakness, slurred speech or vision loss
+      - headache after a head injury
+    candidate_questions:
+      - "How long has the headache been there?"
+      - "Did it start suddenly and very badly, or build up slowly?"
+      - "Is there fever, neck stiffness, or vomiting with it?"
+      - "Any weakness, difficulty speaking, or trouble seeing?"
+      - "Do you get this kind of headache often?"
+    severity_modifiers:
+      sudden_worst_ever: 8
+      with_neck_stiffness: 8
+      with_neuro_signs: 9
+      after_head_injury: 7
+    otc_categories_allowed: [analgesic_antipyretic]
+    self_care: >-
+      Rest in a quiet, dim room. Drink water - headaches are often from not
+      drinking enough or skipping meals. Regular sleep helps.
+      Do not take painkillers most days of the week - that causes headaches of
+      its own. Do not exceed the dose on the packet, and do not wait at home
+      with a headache that came on suddenly and severely.
+    refer_when: >-
+      A sudden very severe headache, headache with fever and a stiff neck,
+      any weakness or speech or vision change, headache after a head injury, or
+      a headache that keeps getting worse over days.
+    source: "NICE CKS headache; WHO STG"
+
+  - id: chest_pain
+    presentation: "Chest pain or chest discomfort"
+    # Wins over any other presentation mentioned in the same complaint, even an
+    # earlier one: "acidity and chest pain" is a chest-pain call.
+    priority: emergency
+    aliases:
+      en: [chest pain, chest discomfort, chest tightness, chest heaviness, pain in chest, chest pressure, pain in my chest, chest ache, heart pain, pain spreading to arm, left arm pain]
+      hi: [seene mein dard, chhati mein dard, seene mein bhaari, सीने में दर्द, छाती में दर्द, सीना दर्द]
+      ta: [nenju vali, maarbu vali, மார்பு வலி, நெஞ்சு வலி]
+      te: [chaati noppi, ఛాతీ నొప్పి, గుండె నొప్పి]
+      kn: [ede novu, ಎದೆ ನೋವು, ಎದೆನೋವು]
+      ml: [nenchu vedana, നെഞ്ചുവേദന, നെഞ്ച് വേദന]
+    red_flags:
+      - any chest pain in an adult must be treated as possible heart trouble
+      - pain spreading to arm, jaw or back
+      - sweating, nausea or breathlessness with the pain
+    candidate_questions:
+      - "When did the pain start, and what were you doing at the time?"
+      - "Does the pain spread to your arm, jaw, or back?"
+      - "Are you sweating, feeling sick, or short of breath?"
+      - "Do you have blood pressure, sugar, or a heart problem?"
+    severity_modifiers:
+      age_over_40: 3
+      radiating: 4
+      spreading: 4
+      left_arm: 4
+      jaw: 3
+      with_sweating: 4
+      with_breathlessness: 4
+    otc_categories_allowed: []
+    self_care: >-
+      There is no safe home treatment for chest pain. Sit upright, stay calm,
+      loosen tight clothing, and get medical help immediately.
+      Do not drive yourself. Do not walk about or exert yourself, and do not
+      take a painkiller to push through it - that hides the problem without
+      treating it. Do not wait to see whether it passes.
+    refer_when: >-
+      Always. All chest pain needs to be seen urgently - do not wait to see if
+      it settles.
+    source: "WHO STG acute coronary syndrome; NICE CKS chest pain"
+
+  - id: breathlessness
+    presentation: "Breathing difficulty"
+    priority: emergency
+    aliases:
+      en: [breathlessness, cannot breathe, difficulty breathing, short of breath, wheezing, asthma attack, breathing problem, breathing difficulty, difficulty in breathing, trouble breathing, hard to breathe, shortness of breath, breathless, can not breathe, unable to breathe, can't breathe, cant breathe]
+      hi: [saans phoolna, saans lene mein takleef, dama, सांस लेने में तकलीफ, सांस फूलना, दम घुटना]
+      ta: [moochu thinaral, moochu vaanga mudiyala, மூச்சு திணறல், மூச்சு விட முடியவில்லை]
+      te: [oopiri aadatam ledu, shwasa ibbandi, ఊపిరి ఆడటం లేదు, శ్వాస తీసుకోవడం కష్టం]
+      kn: [usiratada kashta, ಉಸಿರಾಟದ ತೊಂದರೆ, ಉಸಿರು ಕಟ್ಟುವುದು]
+      ml: [swasam mudakkam, ശ്വാസതടസ്സം, ശ്വാസം മുട്ടൽ]
+    red_flags:
+      - breathless at rest or while speaking
+      - blue lips or fingertips
+      - cannot complete a sentence
+    candidate_questions:
+      - "Are you breathless right now, even while sitting still?"
+      - "Can you speak a full sentence without stopping for breath?"
+      - "Do you have asthma or any lung problem?"
+      - "Did this start suddenly?"
+    severity_modifiers:
+      at_rest: 9
+      cannot_speak_sentence: 10
+      blue_lips: 10
+    otc_categories_allowed: []
+    self_care: >-
+      Sit upright and lean slightly forward. Loosen tight clothes. Use a
+      prescribed inhaler if one is available. Get help immediately.
+      Do not lie flat, and do not walk around or climb stairs to test it. Do
+      not take a cough syrup or sleeping medicine to settle the breathing. Do
+      not wait at home hoping it eases.
+    refer_when: >-
+      Always and immediately. Breathing difficulty is an emergency.
+    source: "WHO STG; NICE CKS breathlessness"
+
+  - id: body_ache
+    presentation: "Body ache / muscle and joint pain"
+    aliases:
+      en: [body pain, body ache, muscle pain, joint pain, aches, sprain, pulled muscle, back strain]
+      hi: [badan dard, jodo mein dard, mocha, kamar dard, बदन दर्द, शरीर में दर्द, जोड़ों में दर्द]
+      ta: [udal vali, mootu vali, sundhu vali, உடல் வலி, மூட்டு வலி]
+      te: [ottu noppulu, kandarala noppi, ఒళ్ళు నొప్పులు, కీళ్ల నొప్పులు]
+      kn: [maimuri, kilu novu, ಮೈ ಕೈ ನೋವು, ಕೀಲು ನೋವು]
+      ml: [ശരീരവേദന, sandhi vedana, സന്ധി വേദന]
+    red_flags:
+      - joint that is hot, red and very swollen
+      - inability to bear weight after an injury
+      - body ache with high fever and rash
+    candidate_questions:
+      - "Which part of the body is paining most?"
+      - "Did it start after an injury, or on its own?"
+      - "Is any joint hot, red, or badly swollen?"
+      - "Is there fever along with it?"
+    severity_modifiers:
+      hot_swollen_joint: 5
+      cannot_bear_weight: 4
+      with_high_fever_and_rash: 5
+    otc_categories_allowed: [analgesic_antipyretic, nsaid]
+    self_care: >-
+      Rest the painful part. For a fresh injury, apply a cold cloth for 15
+      minutes a few times on the first day. Gentle movement afterwards. For a
+      backache, avoid lifting heavy weights and keep gently active.
+    refer_when: >-
+      A hot, red, very swollen joint, inability to stand on the leg after a
+      fall, numbness or weakness, or pain not improving in a week.
+    source: "NICE CKS musculoskeletal pain"
+
+  - id: skin_rash_itch
+    presentation: "Itchy skin or rash"
+    aliases:
+      en: [rash, itching, itchy skin, skin allergy, hives, prickly heat, insect bite, skin irritation]
+      hi: [khujli, daane, chakatte, ghamouri, chubhan, खुजली, चकत्ते, दाने, त्वचा पर लाल चकत्ते]
+      ta: [arippu, thadippu, kurukku, அரிப்பு, தோல் அரிப்பு, தடிப்பு]
+      te: [durada, dadduru, దురద, దద్దుర్లు]
+      kn: [tuttu, kajji, ತುರಿಕೆ, ಚರ್ಮದ ದದ್ದು]
+      ml: [chorachil, thadippu, ചൊറിച്ചിൽ, തടിപ്പ്]
+    red_flags:
+      - rash with fever and feeling very unwell
+      - rash that does not fade when pressed
+      - swelling of lips, tongue or throat
+      - blistering or peeling skin
+    candidate_questions:
+      - "Where on the body is the rash, and is it spreading?"
+      - "Is there fever along with the rash?"
+      - "Did it start after a new medicine, food, or soap?"
+      - "Is there any swelling of the lips, face or throat?"
+    severity_modifiers:
+      with_fever: 4
+      non_blanching: 8
+      facial_swelling: 9
+      blistering: 6
+    otc_categories_allowed: [antipruritic_topical, antihistamine]
+    self_care: >-
+      Keep the skin clean and dry. Cool water compress for itching. Avoid
+      scratching, harsh soap, and any new product you suspect. Loose cotton
+      clothes help in the heat.
+    refer_when: >-
+      Rash with fever, a rash that does not fade when pressed with a glass,
+      swelling of the face or throat, blistering, or a rash spreading rapidly.
+    source: "NICE CKS itch and urticaria"
+
+  - id: fungal_skin
+    presentation: "Fungal skin infection / ringworm"
+    aliases:
+      en: [ringworm, fungal infection, round itchy patch, athlete foot, jock itch, daad]
+      hi: [daad, dad khaj, khujli wala chakatta, दाद, खाज, फंगल संक्रमण]
+      ta: [padarthamarai, saruma noi, படர்தாமரை, சொறி]
+      te: [thamara, fungal, తామర, ఫంగల్ ఇన్ఫెక్షన్]
+      kn: [hulli kajji, ಹುಳುಕಡ್ಡಿ, ಶಿಲೀಂಧ್ರ ಸೋಂಕು]
+      ml: [pulli, fungal, വട്ടച്ചൊറി, ഫംഗസ് ബാധ]
+    red_flags:
+      - infection of the scalp or nails
+      - spreading redness with pus or fever
+      - widespread patches over the body
+    candidate_questions:
+      - "Is the patch round with a raised itchy edge?"
+      - "How long has it been there and is it spreading?"
+      - "Is it on the scalp, or affecting the nails?"
+      - "Has anyone else at home got the same thing?"
+    severity_modifiers:
+      scalp_or_nails: 4
+      widespread: 3
+      with_pus_or_fever: 5
+    otc_categories_allowed: [antifungal_topical]
+    self_care: >-
+      Keep the area clean and completely dry. Do not share towels or clothes.
+      Wash and sun-dry clothing and bedding. Treat everyone at home who has it.
+      Cream must be continued for two weeks after the patch looks clear.
+    refer_when: >-
+      Patches on the scalp or nails (these need tablets from a doctor), very
+      widespread patches, pus or spreading redness, or no improvement after
+      two weeks of cream.
+    source: "NICE CKS fungal skin infection"
+
+  - id: wound_cut
+    presentation: "Cut, wound or minor injury"
+    aliases:
+      en: [cut, wound, injury, bleeding, scrape, graze, gash, hurt myself]
+      hi: [chot, kat gaya, ghaav, zakhm, चोट, घाव, कट गया, खून निकल रहा]
+      ta: [kaayam, vettu, காயம், வெட்டு, ரத்தம் வருகிறது]
+      te: [gaayam, dhebba, గాయం, కోత, రక్తం కారుతోంది]
+      kn: [gaya, kade, ಗಾಯ, ಕತ್ತರಿಸಿದೆ, ರಕ್ತ ಬರುತ್ತಿದೆ]
+      ml: [murivu, muriv, മുറിവ്, ചോര വരുന്നു]
+    red_flags:
+      - bleeding that will not stop with pressure
+      - deep or gaping wound
+      - animal or human bite
+      - rusty or dirty puncture wound
+    candidate_questions:
+      - "Is the bleeding stopping when you press on it with a clean cloth?"
+      - "How deep is the cut - can you see fat or muscle inside?"
+      - "How did it happen - was it a clean blade, a rusty object, or a bite?"
+      - "When did you last have a tetanus injection?"
+    severity_modifiers:
+      bleeding_not_stopping: 9
+      deep_or_gaping: 5
+      animal_bite: 6
+      rusty_or_dirty: 4
+    otc_categories_allowed: [antiseptic_topical, analgesic_antipyretic]
+    self_care: >-
+      Wash your hands, then rinse the wound under clean running water. Press
+      firmly with a clean cloth to stop bleeding. Apply antiseptic and cover
+      with a clean dressing. Change the dressing daily and keep it dry.
+      Do not put turmeric, ash, cow dung, mud, oil or toothpaste on a wound -
+      these cause serious infection including tetanus. Do not try to stitch it
+      at home, and do not pull out anything stuck deep in the wound.
+    refer_when: >-
+      Bleeding will not stop after 10 minutes of firm pressure, the wound is
+      deep or gaping, it is an animal or human bite, it was caused by a dirty or
+      rusty object, or there is spreading redness, pus or fever later. Any bite
+      or dirty wound needs a tetanus injection and possibly rabies vaccination.
+    source: "WHO wound care; NICE CKS lacerations"
+
+  - id: burn
+    presentation: "Burn or scald"
+    aliases:
+      en: [burn, burnt, scald, hot water burn, fire burn, blister from heat]
+      hi: [jal gaya, jalan, garam pani se jal gaya, जल गया, आग से जला, जलने का घाव]
+      ta: [thee kaayam, sudu, தீக்காயம், சுட்டுவிட்டது]
+      te: [kaalina gaayam, కాలిన గాయం, కాలింది]
+      kn: [suttu gaya, ಸುಟ್ಟಗಾಯ, ಸುಟ್ಟಿದೆ]
+      ml: [pollal, പൊള്ളൽ, പൊള്ളി]
+    red_flags:
+      - burn larger than the person's palm
+      - burn on the face, hands, feet, joints or genitals
+      - white, charred or painless burn
+      - any electrical or chemical burn
+    candidate_questions:
+      - "How big is the burnt area compared to your palm?"
+      - "Where on the body is it?"
+      - "Is the skin blistered, or white and hard?"
+      - "How did it happen - hot liquid, fire, electricity, or a chemical?"
+    severity_modifiers:
+      larger_than_palm: 7
+      critical_area: 7
+      full_thickness: 9
+      electrical_or_chemical: 8
+    otc_categories_allowed: [analgesic_antipyretic]
+    self_care: >-
+      Cool the burn under clean running water for 20 minutes as soon as
+      possible. Remove rings and tight clothing near the area. Cover loosely
+      with a clean cloth or cling film. Never apply toothpaste, oil, ghee, ash
+      or ice. Do not break blisters.
+    refer_when: >-
+      Any burn bigger than the palm, burns on the face, hands, feet, joints or
+      private parts, white or charred skin, electrical or chemical burns, or
+      any burn in a small child or elderly person.
+    source: "WHO burn management; NICE CKS burns"
+
+  - id: ear_pain
+    presentation: "Ear pain / ear discharge"
+    aliases:
+      en: [ear pain, earache, ear discharge, pus from ear, ear infection, ear blocked]
+      hi: [kaan mein dard, kaan bahna, kaan band, कान में दर्द, कान दर्द, कान बह रहा]
+      ta: [kaadhu vali, kaadhil sathai, காது வலி, காது வடிதல்]
+      te: [chevi noppi, చెవి నొప్పి, చెవి కారడం]
+      kn: [kivi novu, ಕಿವಿ ನೋವು, ಕಿವಿ ಸೋರುವಿಕೆ]
+      ml: [chevi vedana, ചെവി വേദന, ചെവിയിൽ പഴുപ്പ്]
+    red_flags:
+      - swelling or redness of the bone behind the ear
+      - ear pain with high fever and a very unwell child
+      - sudden hearing loss
+    candidate_questions:
+      - "How many days has the ear been paining?"
+      - "Is anything coming out of the ear?"
+      - "Is there fever?"
+      - "Is there any swelling or tenderness behind the ear?"
+    severity_modifiers:
+      swelling_behind_ear: 8
+      discharge: 3
+      age_under_5: 2
+      with_high_fever: 3
+    otc_categories_allowed: [analgesic_antipyretic]
+    self_care: >-
+      Keep the ear dry - do not put water, oil, or any drops inside without a
+      doctor's advice. A warm cloth held against the ear can ease the pain.
+      Never put a stick or cotton bud into the ear.
+    refer_when: >-
+      Discharge from the ear, swelling behind the ear, high fever, sudden
+      hearing loss, or pain lasting more than 2 days. Children with ear
+      discharge need to be seen.
+    source: "WHO IMCI ear problems; NICE CKS otitis media"
+
+  - id: urinary_symptoms
+    presentation: "Burning urine / urinary symptoms"
+    aliases:
+      en: [burning urine, painful urination, frequent urination, urine infection, uti, cannot pass urine]
+      hi: [peshaab mein jalan, baar baar peshaab, peshaab nahi aa raha, पेशाब में जलन, पेशाब करते समय दर्द, बार बार पेशाब]
+      ta: [siruneer ericcal, siruneer kaduppu, சிறுநீர் எரிச்சல், சிறுநீர் கழிக்கும்போது வலி]
+      te: [mutram manta, moothra vishayam, మూత్రంలో మంట, మూత్ర విసర్జనలో నొప్పి]
+      kn: [mootra uri, ಮೂತ್ರದಲ್ಲಿ ಉರಿ, ಮೂತ್ರ ಮಾಡುವಾಗ ನೋವು]
+      ml: [moothram erichil, മൂത്രത്തിൽ കത്തൽ, മൂത്രമൊഴിക്കുമ്പോൾ വേദന]
+    red_flags:
+      - fever with back or flank pain
+      - not passing urine at all
+      - blood in the urine
+      - symptoms in pregnancy
+    candidate_questions:
+      - "Is there burning or pain when you pass urine?"
+      - "Is there fever or pain in the back or side?"
+      - "Is there any blood in the urine?"
+      - "Are you passing urine normally, or has it stopped?"
+      - "For women: is there any chance you are pregnant?"
+    severity_modifiers:
+      fever_with_flank_pain: 7
+      no_urine: 9
+      blood_in_urine: 5
+      pregnant: 6
+      age_over_65: 2
+    otc_categories_allowed: []
+    self_care: >-
+      Drink plenty of water through the day. Do not hold urine. Keep the area
+      clean and wipe front to back.
+    refer_when: >-
+      Always - a urine infection usually needs a prescription antibiotic, which
+      we cannot provide. Go urgently if there is fever with back pain, blood in
+      the urine, no urine at all, or if you are pregnant.
+    source: "NICE CKS urinary tract infection; ICMR STG"
+
+  - id: worms
+    presentation: "Intestinal worms"
+    aliases:
+      en: [worms, worm in stool, itching around anus, deworming, stomach worms]
+      hi: [pet ke keede, keeda, gudda mein khujli, पेट में कीड़े, कीड़े]
+      ta: [kudal puzhu, vayitril puzhu, வயிற்றுப் புழு, குடல் புழு]
+      te: [purugulu, kadupulo purugulu, పేగు పురుగులు, కడుపులో పురుగులు]
+      kn: [hotteyalli hulu, ಹೊಟ್ಟೆಯಲ್ಲಿ ಹುಳು, ಕರುಳಿನ ಹುಳು]
+      ml: [vayattil vira, വയറ്റിൽ വിര, കുടൽ വിര]
+    red_flags:
+      - severe abdominal pain or swelling
+      - vomiting worms
+    candidate_questions:
+      - "Have you actually seen worms in the motion or around the back passage?"
+      - "Is there itching around the back passage, especially at night?"
+      - "How old is the person who needs treatment?"
+      - "Is there any chance of pregnancy?"
+    severity_modifiers:
+      severe_pain: 5
+      age_under_1: 4
+      pregnant: 4
+    otc_categories_allowed: [anthelmintic]
+    self_care: >-
+      Wash hands with soap before eating and after using the toilet. Cut nails
+      short. Wash and sun-dry bedding and underclothes. Wear footwear outdoors.
+      Treat everyone in the household at the same time.
+      Do not take deworming tablets that were prescribed for someone else, and
+      do not give them to a child under one year or in early pregnancy without
+      asking a health worker first. Do not let children walk barefoot
+      outdoors.
+    refer_when: >-
+      A child under 1 year, pregnancy, severe stomach pain or swelling, or
+      symptoms continuing after treatment.
+    source: "WHO preventive chemotherapy; National Deworming Day"
+
+  - id: allergy_sneezing
+    presentation: "Allergic rhinitis / sneezing and itchy eyes"
+    aliases:
+      en: [allergy, sneezing, itchy eyes, watery eyes, dust allergy, seasonal allergy, itchy nose]
+      hi: [allergy, chheenk, aankh mein khujli, dhool se allergy, छींक, छींक आना, एलर्जी, आंखों में खुजली]
+      ta: [thummal, kann arippu, தும்மல், ஒவ்வாமை, கண் அரிப்பு]
+      te: [tummulu, kallu durada, తుమ్ములు, అలర్జీ, కళ్ళ దురద]
+      kn: [sincu, kannu tuttu, ಸೀನು, ಅಲರ್ಜಿ, ಕಣ್ಣು ತುರಿಕೆ]
+      ml: [thummal, kannu chorachil, തുമ്മൽ, അലർജി, കണ്ണ് ചൊറിച്ചിൽ]
+    red_flags:
+      - wheezing or breathlessness
+      - swelling of face or throat
+    candidate_questions:
+      - "Does it happen at a particular time or place - dust, smoke, or a season?"
+      - "Are the eyes itchy and watery as well?"
+      - "Is there any wheezing or difficulty breathing?"
+      - "How long does it last each time?"
+    severity_modifiers:
+      with_wheeze: 6
+      facial_swelling: 9
+    otc_categories_allowed: [antihistamine, nasal_saline]
+    self_care: >-
+      Avoid the trigger where you can - dust, smoke, strong smells. Rinse the
+      nose with saline. Cover the nose with a cloth while sweeping or in dust.
+      Wash bedding regularly in hot water.
+    refer_when: >-
+      Wheezing or breathlessness, swelling of the face or throat, or symptoms
+      that do not settle with an antihistamine after a week.
+    source: "NICE CKS allergic rhinitis; ARIA"
+
+  - id: weakness_fatigue
+    presentation: "Weakness / tiredness"
+    aliases:
+      en: [weakness, tiredness, fatigue, feeling weak, no energy, giddiness, dizzy, anaemia]
+      hi: [kamzori, thakan, chakkar, khoon ki kami, कमजोरी, थकान, कमज़ोरी]
+      ta: [sorvu, thalai suttral, ratha soku, சோர்வு, பலவீனம், தளர்ச்சி]
+      te: [balaheenata, nirsatthuva, నీరసం, అలసట, బలహీనత]
+      kn: [balaheenate, sustu, ಸುಸ್ತು, ಆಯಾಸ, ದೌರ್ಬಲ್ಯ]
+      ml: [thalarcha, ksheenam, ക്ഷീണം, തളർച്ച]
+    red_flags:
+      - fainting or near-fainting
+      - chest pain or breathlessness with the weakness
+      - weakness on one side of the body
+      - black stools
+    candidate_questions:
+      - "How long have you been feeling weak?"
+      - "Do you feel giddy or faint when you stand up?"
+      - "Is there any breathlessness or chest discomfort?"
+      - "Are you eating properly? Any heavy periods or black motions?"
+      - "Is the weakness in one particular part of the body?"
+    severity_modifiers:
+      fainting: 7
+      with_chest_symptoms: 8
+      one_sided: 10
+      black_stools: 7
+      pregnant: 3
+    otc_categories_allowed: [supplement, oral_rehydration]
+    self_care: >-
+      Eat regular meals with green leafy vegetables, dal, jaggery and seasonal
+      fruit. Drink enough water. Rest properly at night. Iron-folic acid tablets
+      from the local health centre help if you are anaemic.
+      Do not take iron tablets with tea, coffee or milk - they block the iron
+      from being absorbed. Do not buy tonics or ask for an injection for
+      weakness. Do not ignore weakness that has gone on for weeks without
+      getting it checked.
+    refer_when: >-
+      Fainting, weakness on one side of the body, breathlessness or chest
+      discomfort, black stools, weakness during pregnancy, or tiredness that
+      keeps getting worse. A blood test for anaemia is usually needed.
+    source: "Anaemia Mukt Bharat; NICE CKS tiredness"
+
+  - id: constipation
+    presentation: "Constipation"
+    aliases:
+      en: [constipation, hard stool, cannot pass motion, no motion for days, straining]
+      hi: [kabz, paikhana nahi ho raha, sakht paikhana, कब्ज, पेट साफ नहीं, शौच नहीं हो रहा]
+      ta: [malachikkal, மலச்சிக்கல், மலம் கழியவில்லை]
+      te: [malabaddhakam, మలబద్ధకం, మలబద్దకం]
+      kn: [malabaddhate, ಮಲಬದ್ಧತೆ, ಶೌಚ ಆಗುತ್ತಿಲ್ಲ]
+      ml: [malabandham, മലബന്ധം]
+    red_flags:
+      - no stool and no gas with a swollen painful abdomen
+      - blood in the stool
+      - sudden change in bowel habit over age 45
+    candidate_questions:
+      - "How many days has it been since you passed motion?"
+      - "Is your stomach swollen or painful?"
+      - "Is any gas passing?"
+      - "Is there any blood when you pass motion?"
+    severity_modifiers:
+      no_gas_and_swollen: 9
+      blood_in_stool: 5
+      age_over_45_new_change: 4
+    otc_categories_allowed: []
+    self_care: >-
+      Drink more water through the day. Eat more fibre - vegetables, fruit,
+      whole grains, soaked raisins. Walk daily. Do not ignore the urge to go.
+      Warm water in the morning helps many people.
+    refer_when: >-
+      No stool and no gas with a swollen painful stomach (this is an emergency),
+      blood in the stool, unexplained weight loss, or a new lasting change in
+      bowel habit after age 45.
+    source: "NICE CKS constipation"
+
+  - id: pregnancy_concern
+    presentation: "Pregnancy-related concern"
+    aliases:
+      en: [pregnant, pregnancy, expecting, missed period, morning sickness in pregnancy, baby not moving]
+      hi: [garbhvati, pregnancy, mahwari band, pet mein bacha, गर्भावस्था, गर्भवती, प्रेगनेंसी, पेट से हूं]
+      ta: [karpam, karuvutru, கர்ப்பம், கர்ப்பிணி]
+      te: [garbham, garbhavati, గర్భం, గర్భవతి, ప్రెగ్నెన్సీ]
+      kn: [garbhini, garbha, ಗರ್ಭಧಾರಣೆ, ಗರ್ಭಿಣಿ]
+      ml: [garbhini, garbham, ഗർഭം, ഗർഭിണി]
+    red_flags:
+      - bleeding in pregnancy
+      - severe abdominal pain
+      - severe headache, blurred vision or swelling of face and hands
+      - reduced or absent baby movements
+      - fits
+    candidate_questions:
+      - "How many months pregnant are you?"
+      - "Is there any bleeding or fluid coming out?"
+      - "Any severe headache, blurred vision, or swelling of the face and hands?"
+      - "Is the baby moving as usual?"
+      - "Are you registered at a health centre and taking iron tablets?"
+    severity_modifiers:
+      bleeding: 9
+      severe_headache_or_vision: 9
+      reduced_movements: 9
+      severe_abdominal_pain: 9
+    otc_categories_allowed: [supplement, oral_rehydration]
+    self_care: >-
+      Keep all antenatal check-ups at the health centre. Take iron-folic acid
+      and calcium tablets as advised. Eat well and rest. Never take any medicine
+      in pregnancy without asking a doctor or ANM first.
+    refer_when: >-
+      Any bleeding, severe headache, blurred vision, swelling of face and hands,
+      severe stomach pain, fits, fever, or reduced baby movements - go to a
+      hospital immediately. Anything else, speak to your ANM or ASHA worker.
+    source: "WHO antenatal care; Government of India MCH guidelines"
